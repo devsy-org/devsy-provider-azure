@@ -13,12 +13,21 @@ func deleteVirtualNetWork(ctx context.Context, azureProvider *AzureProvider) err
 		return nil
 	}
 
-	vnetClient, err := armnetwork.NewVirtualNetworksClient(azureProvider.Config.SubscriptionID, azureProvider.Cred, nil)
+	vnetClient, err := armnetwork.NewVirtualNetworksClient(
+		azureProvider.Config.SubscriptionID,
+		azureProvider.Cred,
+		nil,
+	)
 	if err != nil {
 		return err
 	}
 
-	pollerResponse, err := vnetClient.BeginDelete(ctx, azureProvider.Config.ResourceGroup, azureProvider.Config.MachineID+"-vnet", nil)
+	pollerResponse, err := vnetClient.BeginDelete(
+		ctx,
+		azureProvider.Config.ResourceGroup,
+		azureProvider.Config.MachineID+"-vnet",
+		nil,
+	)
 	if err != nil {
 		return err
 	}
@@ -30,12 +39,17 @@ func deleteVirtualNetWork(ctx context.Context, azureProvider *AzureProvider) err
 
 	return nil
 }
+
 func deleteSubnets(ctx context.Context, azureProvider *AzureProvider) error {
 	if !checkSubnets(ctx, azureProvider) {
 		return nil
 	}
 
-	subnetClient, err := armnetwork.NewSubnetsClient(azureProvider.Config.SubscriptionID, azureProvider.Cred, nil)
+	subnetClient, err := armnetwork.NewSubnetsClient(
+		azureProvider.Config.SubscriptionID,
+		azureProvider.Cred,
+		nil,
+	)
 	if err != nil {
 		return err
 	}
@@ -64,12 +78,21 @@ func deleteNetworkSecurityGroup(ctx context.Context, azureProvider *AzureProvide
 		return nil
 	}
 
-	nsgClient, err := armnetwork.NewSecurityGroupsClient(azureProvider.Config.SubscriptionID, azureProvider.Cred, nil)
+	nsgClient, err := armnetwork.NewSecurityGroupsClient(
+		azureProvider.Config.SubscriptionID,
+		azureProvider.Cred,
+		nil,
+	)
 	if err != nil {
 		return err
 	}
 
-	pollerResponse, err := nsgClient.BeginDelete(ctx, azureProvider.Config.ResourceGroup, azureProvider.Config.MachineID+"-nsg", nil)
+	pollerResponse, err := nsgClient.BeginDelete(
+		ctx,
+		azureProvider.Config.ResourceGroup,
+		azureProvider.Config.MachineID+"-nsg",
+		nil,
+	)
 	if err != nil {
 		return err
 	}
@@ -86,7 +109,11 @@ func deletePublicIP(ctx context.Context, azureProvider *AzureProvider) error {
 		return nil
 	}
 
-	publicIPAddressClient, err := armnetwork.NewPublicIPAddressesClient(azureProvider.Config.SubscriptionID, azureProvider.Cred, nil)
+	publicIPAddressClient, err := armnetwork.NewPublicIPAddressesClient(
+		azureProvider.Config.SubscriptionID,
+		azureProvider.Cred,
+		nil,
+	)
 	if err != nil {
 		return err
 	}
@@ -113,12 +140,21 @@ func deleteNetWorkInterface(ctx context.Context, azureProvider *AzureProvider) e
 		return nil
 	}
 
-	nicClient, err := armnetwork.NewInterfacesClient(azureProvider.Config.SubscriptionID, azureProvider.Cred, nil)
+	nicClient, err := armnetwork.NewInterfacesClient(
+		azureProvider.Config.SubscriptionID,
+		azureProvider.Cred,
+		nil,
+	)
 	if err != nil {
 		return err
 	}
 
-	pollerResponse, err := nicClient.BeginDelete(ctx, azureProvider.Config.ResourceGroup, azureProvider.Config.MachineID+"-nic", nil)
+	pollerResponse, err := nicClient.BeginDelete(
+		ctx,
+		azureProvider.Config.ResourceGroup,
+		azureProvider.Config.MachineID+"-nic",
+		nil,
+	)
 	if err != nil {
 		return err
 	}
@@ -136,7 +172,11 @@ func deleteVirtualMachine(ctx context.Context, azureProvider *AzureProvider) err
 		return nil
 	}
 
-	vmClient, err := armcompute.NewVirtualMachinesClient(azureProvider.Config.SubscriptionID, azureProvider.Cred, nil)
+	vmClient, err := armcompute.NewVirtualMachinesClient(
+		azureProvider.Config.SubscriptionID,
+		azureProvider.Cred,
+		nil,
+	)
 	if err != nil {
 		return err
 	}
@@ -160,12 +200,21 @@ func deleteVirtualMachine(ctx context.Context, azureProvider *AzureProvider) err
 }
 
 func deleteDisk(ctx context.Context, azureProvider *AzureProvider) error {
-	diskClient, err := armcompute.NewDisksClient(azureProvider.Config.SubscriptionID, azureProvider.Cred, nil)
+	diskClient, err := armcompute.NewDisksClient(
+		azureProvider.Config.SubscriptionID,
+		azureProvider.Cred,
+		nil,
+	)
 	if err != nil {
 		return err
 	}
 
-	pollerResponse, err := diskClient.BeginDelete(ctx, azureProvider.Config.ResourceGroup, azureProvider.Config.MachineID+"-disk", nil)
+	pollerResponse, err := diskClient.BeginDelete(
+		ctx,
+		azureProvider.Config.ResourceGroup,
+		azureProvider.Config.MachineID+"-disk",
+		nil,
+	)
 	if err != nil {
 		return err
 	}

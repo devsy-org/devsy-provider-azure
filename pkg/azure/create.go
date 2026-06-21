@@ -12,13 +12,20 @@ import (
 	"github.com/devsy-org/devsy/pkg/ssh"
 )
 
-func createVirtualNetwork(ctx context.Context, azureProvider *AzureProvider) (*armnetwork.VirtualNetwork, error) {
+func createVirtualNetwork(
+	ctx context.Context,
+	azureProvider *AzureProvider,
+) (*armnetwork.VirtualNetwork, error) {
 	vnet, exists := checkVirtualNetWork(ctx, azureProvider)
 	if exists {
 		return vnet, nil
 	}
 
-	vnetClient, err := armnetwork.NewVirtualNetworksClient(azureProvider.Config.SubscriptionID, azureProvider.Cred, nil)
+	vnetClient, err := armnetwork.NewVirtualNetworksClient(
+		azureProvider.Config.SubscriptionID,
+		azureProvider.Cred,
+		nil,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +62,11 @@ func createVirtualNetwork(ctx context.Context, azureProvider *AzureProvider) (*a
 }
 
 func createSubnets(ctx context.Context, azureProvider *AzureProvider) (*armnetwork.Subnet, error) {
-	subnetClient, err := armnetwork.NewSubnetsClient(azureProvider.Config.SubscriptionID, azureProvider.Cred, nil)
+	subnetClient, err := armnetwork.NewSubnetsClient(
+		azureProvider.Config.SubscriptionID,
+		azureProvider.Cred,
+		nil,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +101,11 @@ func createNetworkSecurityGroup(
 	ctx context.Context,
 	azureProvider *AzureProvider,
 ) (*armnetwork.SecurityGroup, error) {
-	nsgClient, err := armnetwork.NewSecurityGroupsClient(azureProvider.Config.SubscriptionID, azureProvider.Cred, nil)
+	nsgClient, err := armnetwork.NewSecurityGroupsClient(
+		azureProvider.Config.SubscriptionID,
+		azureProvider.Cred,
+		nil,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +176,11 @@ func createPublicIP(
 	ctx context.Context,
 	azureProvider *AzureProvider,
 ) (*armnetwork.PublicIPAddress, error) {
-	publicIPAddressClient, err := armnetwork.NewPublicIPAddressesClient(azureProvider.Config.SubscriptionID, azureProvider.Cred, nil)
+	publicIPAddressClient, err := armnetwork.NewPublicIPAddressesClient(
+		azureProvider.Config.SubscriptionID,
+		azureProvider.Cred,
+		nil,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +220,11 @@ func createNetWorkInterface(
 	publicIPID string,
 	networkSecurityGroupID string,
 ) (*armnetwork.Interface, error) {
-	nicClient, err := armnetwork.NewInterfacesClient(azureProvider.Config.SubscriptionID, azureProvider.Cred, nil)
+	nicClient, err := armnetwork.NewInterfacesClient(
+		azureProvider.Config.SubscriptionID,
+		azureProvider.Cred,
+		nil,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +278,11 @@ func createVirtualMachine(
 	azureProvider *AzureProvider,
 	networkInterfaceID string,
 ) (*armcompute.VirtualMachine, error) {
-	vmClient, err := armcompute.NewVirtualMachinesClient(azureProvider.Config.SubscriptionID, azureProvider.Cred, nil)
+	vmClient, err := armcompute.NewVirtualMachinesClient(
+		azureProvider.Config.SubscriptionID,
+		azureProvider.Cred,
+		nil,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -272,7 +299,6 @@ func createVirtualMachine(
 
 	// CustomData is cloud-init file or base64 encoded string
 	if azureProvider.Config.CustomData != "" {
-
 		// CustomData is a filename
 		if _, err := os.Stat(azureProvider.Config.CustomData); err == nil {
 			customData, err := os.ReadFile(azureProvider.Config.CustomData)
@@ -287,7 +313,6 @@ func createVirtualMachine(
 		} else if _, err := base64.StdEncoding.DecodeString(azureProvider.Config.CustomData); err != nil {
 			return nil, fmt.Errorf("custom data is not base64 encoded string or file")
 		}
-
 	}
 
 	parameters := armcompute.VirtualMachine{
