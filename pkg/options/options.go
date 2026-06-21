@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	"github.com/pkg/errors"
 )
 
 var (
@@ -64,7 +63,7 @@ func FromEnv(init bool) (*Options, error) {
 	}
 	imageSplit := strings.Split(image, ":")
 	if len(imageSplit) < 4 {
-		return nil, errors.Errorf("Malformed image name")
+		return nil, fmt.Errorf("malformed image name")
 	}
 
 	retOptions.DiskImage.Offer = imageSplit[1]
@@ -114,8 +113,8 @@ func FromEnv(init bool) (*Options, error) {
 	if err != nil {
 		return nil, err
 	}
-	// prefix with devpod-
-	retOptions.MachineID = "devpod-" + retOptions.MachineID
+	// prefix with devsy-
+	retOptions.MachineID = "devsy-" + retOptions.MachineID
 
 	retOptions.MachineFolder, err = FromEnvOrError("MACHINE_FOLDER")
 	if err != nil {
@@ -148,7 +147,7 @@ func parseTags(tagsEnv string) (map[string]*string, error) {
 	for _, tag := range tagsRaw {
 		splitTag := strings.SplitN(tag, "=", 2)
 		if len(splitTag) != 2 {
-			return tags, fmt.Errorf("Malformed tag, expected format tagName=tagValue: %s", tag)
+			return tags, fmt.Errorf("malformed tag, expected format tagName=tagValue: %s", tag)
 		}
 		tags[splitTag[0]] = to.Ptr[string](splitTag[1])
 	}

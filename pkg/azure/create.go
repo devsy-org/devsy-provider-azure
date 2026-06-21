@@ -9,7 +9,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
-	"github.com/loft-sh/devpod/pkg/ssh"
+	"github.com/devsy-org/devsy/pkg/ssh"
 )
 
 func createVirtualNetwork(ctx context.Context, azureProvider *AzureProvider) (*armnetwork.VirtualNetwork, error) {
@@ -103,7 +103,7 @@ func createNetworkSecurityGroup(
 				// Windows connection to virtual machine needs to open port 3389,RDP
 				// inbound
 				{
-					Name: to.Ptr("devpod_inbound_22"), //
+					Name: to.Ptr("devsy_inbound_22"), //
 					Properties: &armnetwork.SecurityRulePropertiesFormat{
 						SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
 						SourcePortRange:          to.Ptr("*"),
@@ -113,14 +113,14 @@ func createNetworkSecurityGroup(
 						Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
 						Priority:                 to.Ptr[int32](100),
 						Description: to.Ptr(
-							"devpod network security group inbound port 22",
+							"devsy network security group inbound port 22",
 						),
 						Direction: to.Ptr(armnetwork.SecurityRuleDirectionInbound),
 					},
 				},
 				// outbound
 				{
-					Name: to.Ptr("devpod_outbound_22"), //
+					Name: to.Ptr("devsy_outbound_22"), //
 					Properties: &armnetwork.SecurityRulePropertiesFormat{
 						SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
 						SourcePortRange:          to.Ptr("*"),
@@ -130,7 +130,7 @@ func createNetworkSecurityGroup(
 						Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
 						Priority:                 to.Ptr[int32](100),
 						Description: to.Ptr(
-							"devpod network security group outbound port 22",
+							"devsy network security group outbound port 22",
 						),
 						Direction: to.Ptr(armnetwork.SecurityRuleDirectionOutbound),
 					},
@@ -294,7 +294,7 @@ func createVirtualMachine(
 		Location: to.Ptr(azureProvider.Config.Zone),
 		Tags:     azureProvider.Config.Tags,
 		Identity: &armcompute.VirtualMachineIdentity{
-			Type: to.Ptr(armcompute.ResourceIdentityTypeNone),
+			Type: to.Ptr(armcompute.ResourceIdentityTypeSystemAssigned),
 		},
 		Properties: &armcompute.VirtualMachineProperties{
 			StorageProfile: &armcompute.StorageProfile{
@@ -325,7 +325,7 @@ func createVirtualMachine(
 			},
 			OSProfile: &armcompute.OSProfile{ //
 				ComputerName:  to.Ptr(azureProvider.Config.MachineID),
-				AdminUsername: to.Ptr("devpod"),
+				AdminUsername: to.Ptr("devsy"),
 				CustomData:    to.Ptr(azureProvider.Config.CustomData),
 				LinuxConfiguration: &armcompute.LinuxConfiguration{
 					DisablePasswordAuthentication: to.Ptr(true),
@@ -333,7 +333,7 @@ func createVirtualMachine(
 						PublicKeys: []*armcompute.SSHPublicKey{
 							{
 								Path: to.Ptr(
-									fmt.Sprintf("/home/%s/.ssh/authorized_keys", "devpod"),
+									fmt.Sprintf("/home/%s/.ssh/authorized_keys", "devsy"),
 								),
 								KeyData: to.Ptr(string(publicKey)),
 							},

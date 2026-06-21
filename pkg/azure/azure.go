@@ -3,20 +3,14 @@ package azure
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"strings"
 
-	"github.com/loft-sh/devpod/pkg/client"
-	"github.com/loft-sh/devpod/pkg/log"
-	"github.com/pkg/errors"
-
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
-
-	"github.com/loft-sh/devpod-provider-azure/pkg/options"
+	"github.com/devsy-org/devsy-provider-azure/pkg/options"
+	"github.com/devsy-org/devsy/pkg/client"
+	"github.com/devsy-org/log"
 )
 
 type AzureProvider struct {
@@ -34,39 +28,34 @@ func NewProvider(logs log.Logger) (*AzureProvider, error) {
 
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
-		return nil, errors.Errorf("Authentication failure: %+v", err)
+		return nil, fmt.Errorf("authentication failure: %w", err)
 	}
 
-	// create provider
-	provider := &AzureProvider{
+	return &AzureProvider{
 		Config: config,
 		Cred:   cred,
 		Log:    logs,
-	}
-
-	return provider, nil
+	}, nil
 }
 
 func Create(ctx context.Context, azureProvider *AzureProvider) error {
-	_, err := createVirtualNetwork(ctx, azureProvider)
-	if err != nil {
-		return errors.Errorf("cannot create virtual network:%+v", err)
+	if _, err := createVirtualNetwork(ctx, azureProvider); err != nil {
+		return fmt.Errorf("create virtual network: %w", err)
 	}
 
 	subnet, err := createSubnets(ctx, azureProvider)
 	if err != nil {
-		return errors.Errorf("cannot create subnet:%+v", err)
+		return fmt.Errorf("create subnet: %w", err)
 	}
 
 	publicIP, err := createPublicIP(ctx, azureProvider)
 	if err != nil {
-		return errors.Errorf("cannot create public IP address:%+v", err)
+		return fmt.Errorf("create public IP address: %w", err)
 	}
 
-	// network security group
 	nsg, err := createNetworkSecurityGroup(ctx, azureProvider)
 	if err != nil {
-		return errors.Errorf("cannot create network security group:%+v", err)
+		return fmt.Errorf("create network security group: %w", err)
 	}
 
 	netWorkInterface, err := createNetWorkInterface(
@@ -77,56 +66,47 @@ func Create(ctx context.Context, azureProvider *AzureProvider) error {
 		*nsg.ID,
 	)
 	if err != nil {
-		return errors.Errorf("cannot create network interface:%+v", err)
+		return fmt.Errorf("create network interface: %w", err)
 	}
 
-	networkInterfaceID := netWorkInterface.ID
-	_, err = createVirtualMachine(
-		ctx,
-		azureProvider,
-		*networkInterfaceID,
-	)
-	if err != nil {
-		return errors.Errorf("cannot create virual machine:%+v", err)
+	if _, err := createVirtualMachine(ctx, azureProvider, *netWorkInterface.ID); err != nil {
+		return fmt.Errorf("create virtual machine: %w", err)
+	}
+
+	if err := assignVMSelfContributorRole(ctx, azureProvider); err != nil {
+		return fmt.Errorf("assign self-stop role to VM identity: %w", err)
 	}
 
 	return nil
 }
 
 func Delete(ctx context.Context, azureProvider *AzureProvider) error {
-	err := deleteVirtualMachine(ctx, azureProvider)
-	if err != nil {
-		return errors.Errorf("cannot delete virtual machine:%+v", err)
+	if err := deleteVirtualMachine(ctx, azureProvider); err != nil {
+		return fmt.Errorf("delete virtual machine: %w", err)
 	}
 
-	err = deleteDisk(ctx, azureProvider)
-	if err != nil {
-		return errors.Errorf("cannot delete disk:%+v", err)
+	if err := deleteDisk(ctx, azureProvider); err != nil {
+		return fmt.Errorf("delete disk: %w", err)
 	}
 
-	err = deleteNetWorkInterface(ctx, azureProvider)
-	if err != nil {
-		return errors.Errorf("cannot delete network interface:%+v", err)
+	if err := deleteNetWorkInterface(ctx, azureProvider); err != nil {
+		return fmt.Errorf("delete network interface: %w", err)
 	}
 
-	err = deleteNetworkSecurityGroup(ctx, azureProvider)
-	if err != nil {
-		return errors.Errorf("cannot delete network security group:%+v", err)
+	if err := deleteNetworkSecurityGroup(ctx, azureProvider); err != nil {
+		return fmt.Errorf("delete network security group: %w", err)
 	}
 
-	err = deletePublicIP(ctx, azureProvider)
-	if err != nil {
-		return errors.Errorf("cannot delete public IP address:%+v", err)
+	if err := deletePublicIP(ctx, azureProvider); err != nil {
+		return fmt.Errorf("delete public IP address: %w", err)
 	}
 
-	err = deleteSubnets(ctx, azureProvider)
-	if err != nil {
-		return errors.Errorf("cannot delete subnet:%+v", err)
+	if err := deleteSubnets(ctx, azureProvider); err != nil {
+		return fmt.Errorf("delete subnet: %w", err)
 	}
 
-	err = deleteVirtualNetWork(ctx, azureProvider)
-	if err != nil {
-		return errors.Errorf("cannot delete virtual network:%+v", err)
+	if err := deleteVirtualNetWork(ctx, azureProvider); err != nil {
+		return fmt.Errorf("delete virtual network: %w", err)
 	}
 
 	return nil
@@ -137,12 +117,21 @@ func Status(ctx context.Context, azureProvider *AzureProvider) (client.Status, e
 		return client.StatusNotFound, nil
 	}
 
-	vmClient, err := armcompute.NewVirtualMachinesClient(azureProvider.Config.SubscriptionID, azureProvider.Cred, nil)
+	vmClient, err := armcompute.NewVirtualMachinesClient(
+		azureProvider.Config.SubscriptionID,
+		azureProvider.Cred,
+		nil,
+	)
 	if err != nil {
 		return client.StatusNotFound, nil
 	}
 
-	resource, err := vmClient.InstanceView(ctx, azureProvider.Config.ResourceGroup, azureProvider.Config.MachineID, nil)
+	resource, err := vmClient.InstanceView(
+		ctx,
+		azureProvider.Config.ResourceGroup,
+		azureProvider.Config.MachineID,
+		nil,
+	)
 	if err != nil {
 		return client.StatusNotFound, nil
 	}
@@ -152,12 +141,10 @@ func Status(ctx context.Context, azureProvider *AzureProvider) (client.Status, e
 		status = resource.Statuses[1].DisplayStatus
 	}
 
-	switch {
-	case *status == "VM running":
+	switch *status {
+	case "VM running":
 		return client.StatusRunning, nil
-	case *status == "VM deallocated":
-		return client.StatusStopped, nil
-	case *status == "VM stopped":
+	case "VM deallocated", "VM stopped":
 		return client.StatusStopped, nil
 	default:
 		return client.StatusBusy, nil
@@ -169,10 +156,15 @@ func Stop(ctx context.Context, azureProvider *AzureProvider) error {
 		return nil
 	}
 
-	vmClient, err := armcompute.NewVirtualMachinesClient(azureProvider.Config.SubscriptionID, azureProvider.Cred, nil)
+	vmClient, err := armcompute.NewVirtualMachinesClient(
+		azureProvider.Config.SubscriptionID,
+		azureProvider.Cred,
+		nil,
+	)
 	if err != nil {
 		return err
 	}
+
 	pollerResponse, err := vmClient.BeginDeallocate(
 		ctx,
 		azureProvider.Config.ResourceGroup,
@@ -184,57 +176,7 @@ func Stop(ctx context.Context, azureProvider *AzureProvider) error {
 	}
 
 	_, err = pollerResponse.PollUntilDone(ctx, nil)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// we fallback to use direct http request for this as we'll be on the remote machine.
-func StopRemote(ctx context.Context, azureProvider *AzureProvider) error {
-	client := &http.Client{}
-
-	data := strings.NewReader(``)
-
-	token, err := options.FromEnvOrError("AZURE_PROVIDER_TOKEN")
-	if err != nil {
-		return err
-	}
-
-	url := "https://management.azure.com/subscriptions/" +
-		azureProvider.Config.SubscriptionID + "/resourceGroups/" +
-		azureProvider.Config.ResourceGroup + "/providers/Microsoft.Compute/virtualMachines/" +
-		azureProvider.Config.MachineID + "/deallocate?api-version=2024-03-01"
-
-	req, err := http.NewRequest("POST", url, data)
-	if err != nil {
-		return err
-	}
-
-	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	return nil
-}
-
-func Token(ctx context.Context, azureProvider *AzureProvider) error {
-	accessToken, err := azureProvider.Cred.GetToken(ctx, policy.TokenRequestOptions{
-		Scopes: []string{"https://management.azure.com/.default"},
-	})
-	if err != nil {
-		return err
-	}
-
-	token := strings.Trim(accessToken.Token, "\n")
-
-	fmt.Println(token)
-	return nil
+	return err
 }
 
 func Start(ctx context.Context, azureProvider *AzureProvider) error {
@@ -242,10 +184,15 @@ func Start(ctx context.Context, azureProvider *AzureProvider) error {
 		return nil
 	}
 
-	vmClient, err := armcompute.NewVirtualMachinesClient(azureProvider.Config.SubscriptionID, azureProvider.Cred, nil)
+	vmClient, err := armcompute.NewVirtualMachinesClient(
+		azureProvider.Config.SubscriptionID,
+		azureProvider.Cred,
+		nil,
+	)
 	if err != nil {
 		return err
 	}
+
 	pollerResponse, err := vmClient.BeginStart(
 		ctx,
 		azureProvider.Config.ResourceGroup,
@@ -257,20 +204,25 @@ func Start(ctx context.Context, azureProvider *AzureProvider) error {
 	}
 
 	_, err = pollerResponse.PollUntilDone(ctx, nil)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func GetInstanceIP(ctx context.Context, azureProvider *AzureProvider) (string, error) {
-	publicIPAddressClient, err := armnetwork.NewPublicIPAddressesClient(azureProvider.Config.SubscriptionID, azureProvider.Cred, nil)
+	publicIPAddressClient, err := armnetwork.NewPublicIPAddressesClient(
+		azureProvider.Config.SubscriptionID,
+		azureProvider.Cred,
+		nil,
+	)
 	if err != nil {
 		return "", err
 	}
 
-	resource, err := publicIPAddressClient.Get(ctx, azureProvider.Config.ResourceGroup, azureProvider.Config.MachineID+"-public-ip", nil)
+	resource, err := publicIPAddressClient.Get(
+		ctx,
+		azureProvider.Config.ResourceGroup,
+		azureProvider.Config.MachineID+"-public-ip",
+		nil,
+	)
 	if err != nil {
 		return "", err
 	}

@@ -1,8 +1,6 @@
 package main
 
-import (
-	"github.com/loft-sh/devpod-provider-azure/cmd"
-)
+import "github.com/devsy-org/devsy-provider-azure/cmd"
 
 func main() {
 	cmd.Execute()

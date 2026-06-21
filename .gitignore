@@ -1,5 +1,6 @@
 env
-devpod-provider-azure
-releases
+devsy-provider-aws
 release
+.DS_Store
+dist/
 .idea

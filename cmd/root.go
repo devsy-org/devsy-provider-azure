@@ -4,7 +4,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/loft-sh/devpod/pkg/log"
+	"github.com/devsy-org/log"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
 )
@@ -12,13 +12,14 @@ import (
 // NewRootCmd returns a new root command
 func NewRootCmd() *cobra.Command {
 	azureCmd := &cobra.Command{
-		Use:           "devpod-provider-azure",
+		Use:           "devsy-provider-azure",
 		Short:         "azure Provider commands",
 		SilenceErrors: true,
 		SilenceUsage:  true,
 
 		PersistentPreRunE: func(cobraCmd *cobra.Command, args []string) error {
 			log.Default.MakeRaw()
+
 			return nil
 		},
 	}
@@ -27,21 +28,20 @@ func NewRootCmd() *cobra.Command {
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	// build the root command
 	rootCmd := BuildRoot()
 
-	// execute command
 	err := rootCmd.Execute()
 	if err != nil {
 		if exitErr, ok := err.(*ssh.ExitError); ok {
 			os.Exit(exitErr.ExitStatus())
 		}
+
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			if len(exitErr.Stderr) > 0 {
 				log.Default.ErrorStreamOnly().Error(string(exitErr.Stderr))
 			}
+
 			os.Exit(exitErr.ExitCode())
 		}
 
@@ -49,18 +49,17 @@ func Execute() {
 	}
 }
 
-// BuildRoot creates a new root command from the
+// BuildRoot creates a new root command.
 func BuildRoot() *cobra.Command {
 	rootCmd := NewRootCmd()
 
-	rootCmd.AddCommand(NewCommandCmd())
+	rootCmd.AddCommand(NewInitCmd())
 	rootCmd.AddCommand(NewCreateCmd())
 	rootCmd.AddCommand(NewDeleteCmd())
-	rootCmd.AddCommand(NewInitCmd())
+	rootCmd.AddCommand(NewCommandCmd())
 	rootCmd.AddCommand(NewStartCmd())
-	rootCmd.AddCommand(NewStatusCmd())
 	rootCmd.AddCommand(NewStopCmd())
-	rootCmd.AddCommand(NewStopRemoteCmd())
-	rootCmd.AddCommand(NewTokenCmd())
+	rootCmd.AddCommand(NewStatusCmd())
+
 	return rootCmd
 }
