@@ -61,9 +61,11 @@ func Create(ctx context.Context, azureProvider *AzureProvider) error {
 	netWorkInterface, err := createNetWorkInterface(
 		ctx,
 		azureProvider,
-		*subnet.ID,
-		*publicIP.ID,
-		*nsg.ID,
+		networkInterfaceParams{
+			subnetID:               *subnet.ID,
+			publicIPID:             *publicIP.ID,
+			networkSecurityGroupID: *nsg.ID,
+		},
 	)
 	if err != nil {
 		return fmt.Errorf("create network interface: %w", err)
@@ -227,5 +229,5 @@ func GetInstanceIP(ctx context.Context, azureProvider *AzureProvider) (string, e
 		return "", err
 	}
 
-	return *resource.PublicIPAddress.Properties.IPAddress, nil
+	return *resource.Properties.IPAddress, nil
 }

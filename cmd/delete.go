@@ -8,10 +8,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// DeleteCmd holds the cmd flags
+// DeleteCmd holds the cmd flags.
 type DeleteCmd struct{}
 
-// NewDeleteCmd defines a command
+// NewDeleteCmd defines a command.
 func NewDeleteCmd() *cobra.Command {
 	cmd := &DeleteCmd{}
 	return &cobra.Command{

@@ -11,10 +11,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// CommandCmd holds the cmd flags
+// CommandCmd holds the cmd flags.
 type CommandCmd struct{}
 
-// NewCommandCmd defines a command
+// NewCommandCmd defines a command.
 func NewCommandCmd() *cobra.Command {
 	cmd := &CommandCmd{}
 	return &cobra.Command{

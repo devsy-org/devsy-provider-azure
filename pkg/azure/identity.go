@@ -26,11 +26,8 @@ func assignVMSelfContributorRole(ctx context.Context, azureProvider *AzureProvid
 	if err != nil {
 		return fmt.Errorf("get virtual machine: %w", err)
 	}
-	if vm.Identity == nil || vm.Identity.PrincipalID == nil {
-		return fmt.Errorf("virtual machine has no system-assigned identity")
-	}
-	if vm.ID == nil {
-		return fmt.Errorf("virtual machine has no resource ID")
+	if err := validateVMIdentity(vm); err != nil {
+		return err
 	}
 
 	rolesClient, err := armauthorization.NewRoleAssignmentsClient(
@@ -42,16 +39,34 @@ func assignVMSelfContributorRole(ctx context.Context, azureProvider *AzureProvid
 		return err
 	}
 
-	scope := *vm.ID
+	return createSelfRoleAssignment(ctx, rolesClient, vm, azureProvider.Config.SubscriptionID)
+}
+
+func validateVMIdentity(vm *armcompute.VirtualMachine) error {
+	if vm.Identity == nil || vm.Identity.PrincipalID == nil {
+		return fmt.Errorf("virtual machine has no system-assigned identity")
+	}
+	if vm.ID == nil {
+		return fmt.Errorf("virtual machine has no resource ID")
+	}
+	return nil
+}
+
+func createSelfRoleAssignment(
+	ctx context.Context,
+	client *armauthorization.RoleAssignmentsClient,
+	vm *armcompute.VirtualMachine,
+	subscriptionID string,
+) error {
 	roleDefinitionID := fmt.Sprintf(
 		"/subscriptions/%s/providers/Microsoft.Authorization/roleDefinitions/%s",
-		azureProvider.Config.SubscriptionID,
+		subscriptionID,
 		virtualMachineContributorRoleID,
 	)
 
-	_, err = rolesClient.Create(
+	_, err := client.Create(
 		ctx,
-		scope,
+		*vm.ID,
 		uuid.NewString(),
 		armauthorization.RoleAssignmentCreateParameters{
 			Properties: &armauthorization.RoleAssignmentProperties{
@@ -62,15 +77,15 @@ func assignVMSelfContributorRole(ctx context.Context, azureProvider *AzureProvid
 		},
 		nil,
 	)
-	if err != nil {
-		var respErr *azcore.ResponseError
-		if errors.As(err, &respErr) && respErr.StatusCode == http.StatusConflict {
-			return nil
-		}
-		return err
+	if err == nil {
+		return nil
 	}
 
-	return nil
+	var respErr *azcore.ResponseError
+	if errors.As(err, &respErr) && respErr.StatusCode == http.StatusConflict {
+		return nil
+	}
+	return err
 }
 
 func getVirtualMachine(

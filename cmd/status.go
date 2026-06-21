@@ -10,10 +10,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// StatusCmd holds the cmd flags
+// StatusCmd holds the cmd flags.
 type StatusCmd struct{}
 
-// NewStatusCmd defines a command
+// NewStatusCmd defines a command.
 func NewStatusCmd() *cobra.Command {
 	cmd := &StatusCmd{}
 	return &cobra.Command{

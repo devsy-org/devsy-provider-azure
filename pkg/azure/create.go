@@ -9,8 +9,11 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
+	"github.com/devsy-org/devsy-provider-azure/pkg/options"
 	"github.com/devsy-org/devsy/pkg/ssh"
 )
+
+const adminUsername = "devsy"
 
 func createVirtualNetwork(
 	ctx context.Context,
@@ -115,41 +118,8 @@ func createNetworkSecurityGroup(
 		Tags:     azureProvider.Config.Tags,
 		Properties: &armnetwork.SecurityGroupPropertiesFormat{
 			SecurityRules: []*armnetwork.SecurityRule{
-				// Windows connection to virtual machine needs to open port 3389,RDP
-				// inbound
-				{
-					Name: to.Ptr("devsy_inbound_22"), //
-					Properties: &armnetwork.SecurityRulePropertiesFormat{
-						SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
-						SourcePortRange:          to.Ptr("*"),
-						DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
-						DestinationPortRange:     to.Ptr("22"),
-						Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
-						Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
-						Priority:                 to.Ptr[int32](100),
-						Description: to.Ptr(
-							"devsy network security group inbound port 22",
-						),
-						Direction: to.Ptr(armnetwork.SecurityRuleDirectionInbound),
-					},
-				},
-				// outbound
-				{
-					Name: to.Ptr("devsy_outbound_22"), //
-					Properties: &armnetwork.SecurityRulePropertiesFormat{
-						SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
-						SourcePortRange:          to.Ptr("*"),
-						DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
-						DestinationPortRange:     to.Ptr("22"),
-						Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
-						Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
-						Priority:                 to.Ptr[int32](100),
-						Description: to.Ptr(
-							"devsy network security group outbound port 22",
-						),
-						Direction: to.Ptr(armnetwork.SecurityRuleDirectionOutbound),
-					},
-				},
+				sshRule("devsy_inbound_22", armnetwork.SecurityRuleDirectionInbound, "inbound"),
+				sshRule("devsy_outbound_22", armnetwork.SecurityRuleDirectionOutbound, "outbound"),
 			},
 		},
 	}
@@ -170,6 +140,52 @@ func createNetworkSecurityGroup(
 		return nil, err
 	}
 	return &resp.SecurityGroup, nil
+}
+
+// normalizeCustomData ensures CustomData is base64 (reads + encodes if it's a path).
+func normalizeCustomData(p *AzureProvider) error {
+	data := p.Config.CustomData
+	if data == "" {
+		return nil
+	}
+	if _, err := os.Stat(data); err == nil {
+		raw, err := os.ReadFile(data) //nolint:gosec // user-provided cloud-init path
+		if err != nil {
+			return err
+		}
+		p.Config.CustomData = base64.StdEncoding.EncodeToString(raw)
+		return nil
+	}
+	if _, err := base64.StdEncoding.DecodeString(data); err != nil {
+		return fmt.Errorf("custom data is not base64 encoded string or file")
+	}
+	return nil
+}
+
+// diskSizeGB casts to int32. Azure caps disk size at 32767 GB so overflow is impossible.
+func diskSizeGB(v int) int32 {
+	return int32(v) //nolint:gosec // bounded by Azure max 32767
+}
+
+func sshRule(
+	name string,
+	dir armnetwork.SecurityRuleDirection,
+	label string,
+) *armnetwork.SecurityRule {
+	return &armnetwork.SecurityRule{
+		Name: to.Ptr(name),
+		Properties: &armnetwork.SecurityRulePropertiesFormat{
+			SourceAddressPrefix:      to.Ptr("0.0.0.0/0"),
+			SourcePortRange:          to.Ptr("*"),
+			DestinationAddressPrefix: to.Ptr("0.0.0.0/0"),
+			DestinationPortRange:     to.Ptr("22"),
+			Protocol:                 to.Ptr(armnetwork.SecurityRuleProtocolTCP),
+			Access:                   to.Ptr(armnetwork.SecurityRuleAccessAllow),
+			Priority:                 to.Ptr[int32](100),
+			Description:              to.Ptr("devsy network security group " + label + " port 22"),
+			Direction:                to.Ptr(dir),
+		},
+	}
 }
 
 func createPublicIP(
@@ -213,12 +229,16 @@ func createPublicIP(
 	return &resp.PublicIPAddress, err
 }
 
+type networkInterfaceParams struct {
+	subnetID               string
+	publicIPID             string
+	networkSecurityGroupID string
+}
+
 func createNetWorkInterface(
 	ctx context.Context,
 	azureProvider *AzureProvider,
-	subnetID string,
-	publicIPID string,
-	networkSecurityGroupID string,
+	params networkInterfaceParams,
 ) (*armnetwork.Interface, error) {
 	nicClient, err := armnetwork.NewInterfacesClient(
 		azureProvider.Config.SubscriptionID,
@@ -240,16 +260,16 @@ func createNetWorkInterface(
 					Properties: &armnetwork.InterfaceIPConfigurationPropertiesFormat{
 						PrivateIPAllocationMethod: to.Ptr(armnetwork.IPAllocationMethodDynamic),
 						Subnet: &armnetwork.Subnet{
-							ID: to.Ptr(subnetID),
+							ID: to.Ptr(params.subnetID),
 						},
 						PublicIPAddress: &armnetwork.PublicIPAddress{
-							ID: to.Ptr(publicIPID),
+							ID: to.Ptr(params.publicIPID),
 						},
 					},
 				},
 			},
 			NetworkSecurityGroup: &armnetwork.SecurityGroup{
-				ID: to.Ptr(networkSecurityGroupID),
+				ID: to.Ptr(params.networkSecurityGroupID),
 			},
 		},
 	}
@@ -287,93 +307,9 @@ func createVirtualMachine(
 		return nil, err
 	}
 
-	publicKeyBase, err := ssh.GetPublicKeyBase(azureProvider.Config.MachineFolder)
+	parameters, err := buildVirtualMachineParameters(azureProvider, networkInterfaceID)
 	if err != nil {
 		return nil, err
-	}
-
-	publicKey, err := base64.StdEncoding.DecodeString(publicKeyBase)
-	if err != nil {
-		return nil, err
-	}
-
-	// CustomData is cloud-init file or base64 encoded string
-	if azureProvider.Config.CustomData != "" {
-		// CustomData is a filename
-		if _, err := os.Stat(azureProvider.Config.CustomData); err == nil {
-			customData, err := os.ReadFile(azureProvider.Config.CustomData)
-			if err != nil {
-				return nil, err
-			}
-
-			customDataBase64 := base64.StdEncoding.EncodeToString(customData)
-			azureProvider.Config.CustomData = customDataBase64
-
-			// CustomData is not a base64 encoded string
-		} else if _, err := base64.StdEncoding.DecodeString(azureProvider.Config.CustomData); err != nil {
-			return nil, fmt.Errorf("custom data is not base64 encoded string or file")
-		}
-	}
-
-	parameters := armcompute.VirtualMachine{
-		Location: to.Ptr(azureProvider.Config.Zone),
-		Tags:     azureProvider.Config.Tags,
-		Identity: &armcompute.VirtualMachineIdentity{
-			Type: to.Ptr(armcompute.ResourceIdentityTypeSystemAssigned),
-		},
-		Properties: &armcompute.VirtualMachineProperties{
-			StorageProfile: &armcompute.StorageProfile{
-				ImageReference: &armcompute.ImageReference{
-					// search image reference
-					// az vm image list --output table
-					Offer:     to.Ptr(azureProvider.Config.DiskImage.Offer),
-					Publisher: to.Ptr(azureProvider.Config.DiskImage.Publisher),
-					SKU:       to.Ptr(azureProvider.Config.DiskImage.SKU),
-					Version:   to.Ptr(azureProvider.Config.DiskImage.Version),
-				},
-				OSDisk: &armcompute.OSDisk{
-					Name:         to.Ptr(azureProvider.Config.MachineID + "-disk"),
-					CreateOption: to.Ptr(armcompute.DiskCreateOptionTypesFromImage),
-					Caching:      to.Ptr(armcompute.CachingTypesReadWrite),
-					ManagedDisk: &armcompute.ManagedDiskParameters{
-						StorageAccountType: to.Ptr(
-							armcompute.StorageAccountTypes(azureProvider.Config.DiskType),
-						), // OSDisk type Standard/Premium HDD/SSD
-					},
-					DiskSizeGB: to.Ptr[int32](int32(azureProvider.Config.DiskSizeGB)),
-				},
-			},
-			HardwareProfile: &armcompute.HardwareProfile{
-				VMSize: to.Ptr(
-					armcompute.VirtualMachineSizeTypes(azureProvider.Config.MachineType),
-				), // VM size include vCPUs,RAM,Data Disks,Temp storage.
-			},
-			OSProfile: &armcompute.OSProfile{ //
-				ComputerName:  to.Ptr(azureProvider.Config.MachineID),
-				AdminUsername: to.Ptr("devsy"),
-				CustomData:    to.Ptr(azureProvider.Config.CustomData),
-				LinuxConfiguration: &armcompute.LinuxConfiguration{
-					DisablePasswordAuthentication: to.Ptr(true),
-					SSH: &armcompute.SSHConfiguration{
-						PublicKeys: []*armcompute.SSHPublicKey{
-							{
-								Path: to.Ptr(
-									fmt.Sprintf("/home/%s/.ssh/authorized_keys", "devsy"),
-								),
-								KeyData: to.Ptr(string(publicKey)),
-							},
-						},
-					},
-				},
-			},
-			NetworkProfile: &armcompute.NetworkProfile{
-				NetworkInterfaces: []*armcompute.NetworkInterfaceReference{
-					{
-						ID: to.Ptr(networkInterfaceID),
-					},
-				},
-			},
-		},
 	}
 
 	pollerResponse, err := vmClient.BeginCreateOrUpdate(
@@ -393,4 +329,85 @@ func createVirtualMachine(
 	}
 
 	return &resp.VirtualMachine, nil
+}
+
+func buildVirtualMachineParameters(
+	azureProvider *AzureProvider,
+	networkInterfaceID string,
+) (armcompute.VirtualMachine, error) {
+	publicKeyBase, err := ssh.GetPublicKeyBase(azureProvider.Config.MachineFolder)
+	if err != nil {
+		return armcompute.VirtualMachine{}, err
+	}
+	publicKey, err := base64.StdEncoding.DecodeString(publicKeyBase)
+	if err != nil {
+		return armcompute.VirtualMachine{}, err
+	}
+	if err := normalizeCustomData(azureProvider); err != nil {
+		return armcompute.VirtualMachine{}, err
+	}
+	return armcompute.VirtualMachine{
+		Location: to.Ptr(azureProvider.Config.Zone),
+		Tags:     azureProvider.Config.Tags,
+		Identity: &armcompute.VirtualMachineIdentity{
+			Type: to.Ptr(armcompute.ResourceIdentityTypeSystemAssigned),
+		},
+		Properties: &armcompute.VirtualMachineProperties{
+			StorageProfile: buildStorageProfile(azureProvider.Config),
+			HardwareProfile: &armcompute.HardwareProfile{
+				VMSize: to.Ptr(
+					armcompute.VirtualMachineSizeTypes(azureProvider.Config.MachineType),
+				),
+			},
+			OSProfile:      buildOSProfile(azureProvider.Config, publicKey),
+			NetworkProfile: buildNetworkProfile(networkInterfaceID),
+		},
+	}, nil
+}
+
+func buildStorageProfile(cfg *options.Options) *armcompute.StorageProfile {
+	return &armcompute.StorageProfile{
+		ImageReference: &armcompute.ImageReference{
+			Offer:     to.Ptr(cfg.DiskImage.Offer),
+			Publisher: to.Ptr(cfg.DiskImage.Publisher),
+			SKU:       to.Ptr(cfg.DiskImage.SKU),
+			Version:   to.Ptr(cfg.DiskImage.Version),
+		},
+		OSDisk: &armcompute.OSDisk{
+			Name:         to.Ptr(cfg.MachineID + "-disk"),
+			CreateOption: to.Ptr(armcompute.DiskCreateOptionTypesFromImage),
+			Caching:      to.Ptr(armcompute.CachingTypesReadWrite),
+			ManagedDisk: &armcompute.ManagedDiskParameters{
+				StorageAccountType: to.Ptr(armcompute.StorageAccountTypes(cfg.DiskType)),
+			},
+			DiskSizeGB: to.Ptr(diskSizeGB(cfg.DiskSizeGB)),
+		},
+	}
+}
+
+func buildOSProfile(cfg *options.Options, publicKey []byte) *armcompute.OSProfile {
+	return &armcompute.OSProfile{
+		ComputerName:  to.Ptr(cfg.MachineID),
+		AdminUsername: to.Ptr(adminUsername),
+		CustomData:    to.Ptr(cfg.CustomData),
+		LinuxConfiguration: &armcompute.LinuxConfiguration{
+			DisablePasswordAuthentication: to.Ptr(true),
+			SSH: &armcompute.SSHConfiguration{
+				PublicKeys: []*armcompute.SSHPublicKey{
+					{
+						Path:    to.Ptr("/home/" + adminUsername + "/.ssh/authorized_keys"),
+						KeyData: to.Ptr(string(publicKey)),
+					},
+				},
+			},
+		},
+	}
+}
+
+func buildNetworkProfile(networkInterfaceID string) *armcompute.NetworkProfile {
+	return &armcompute.NetworkProfile{
+		NetworkInterfaces: []*armcompute.NetworkInterfaceReference{
+			{ID: to.Ptr(networkInterfaceID)},
+		},
+	}
 }

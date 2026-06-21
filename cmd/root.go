@@ -9,7 +9,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-// NewRootCmd returns a new root command
+// NewRootCmd returns a new root command.
 func NewRootCmd() *cobra.Command {
 	azureCmd := &cobra.Command{
 		Use:           "devsy-provider-azure",

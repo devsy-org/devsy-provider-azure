@@ -8,10 +8,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// StopCmd holds the cmd flags
+// StopCmd holds the cmd flags.
 type StopCmd struct{}
 
-// NewStopCmd defines a command
+// NewStopCmd defines a command.
 func NewStopCmd() *cobra.Command {
 	cmd := &StopCmd{}
 	return &cobra.Command{
