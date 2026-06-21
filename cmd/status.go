@@ -5,60 +5,33 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/loft-sh/devpod-provider-azure/pkg/azure"
-
-	"github.com/loft-sh/devpod/pkg/log"
-	"github.com/loft-sh/devpod/pkg/provider"
+	"github.com/devsy-org/devsy-provider-azure/pkg/azure"
+	"github.com/devsy-org/log"
 	"github.com/spf13/cobra"
 )
 
-type InstanceStatus struct {
-	NetworkInterfaces []InstanceStatusNetworkInterface `json:"networkInterfaces,omitempty"`
-	Status            string                           `json:"status,omitempty"`
-}
-
-type InstanceStatusNetworkInterface struct {
-	AccessConfigs []InstanceStatusAccessConfig `json:"accessConfigs,omitempty"`
-}
-
-type InstanceStatusAccessConfig struct {
-	NatIP string `json:"natIP,omitempty"`
-}
-
-// StatusCmd holds the cmd flags
+// StatusCmd holds the cmd flags.
 type StatusCmd struct{}
 
-// NewStatusCmd defines a command
+// NewStatusCmd defines a command.
 func NewStatusCmd() *cobra.Command {
 	cmd := &StatusCmd{}
-	statusCmd := &cobra.Command{
+	return &cobra.Command{
 		Use:   "status",
 		Short: "Status an instance",
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cobraCmd *cobra.Command, args []string) error {
 			azureProvider, err := azure.NewProvider(log.Default)
 			if err != nil {
 				return err
 			}
 
-			return cmd.Run(
-				context.Background(),
-				azureProvider,
-				provider.FromEnvironment(),
-				log.Default,
-			)
+			return cmd.Run(cobraCmd.Context(), azureProvider)
 		},
 	}
-
-	return statusCmd
 }
 
-// Run runs the command logic
-func (cmd *StatusCmd) Run(
-	ctx context.Context,
-	providerAzure *azure.AzureProvider,
-	machine *provider.Machine,
-	logs log.Logger,
-) error {
+// Run runs the command logic.
+func (cmd *StatusCmd) Run(ctx context.Context, providerAzure *azure.AzureProvider) error {
 	status, err := azure.Status(ctx, providerAzure)
 	if err != nil {
 		return err

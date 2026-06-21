@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	"github.com/pkg/errors"
 )
 
 var (
@@ -45,84 +44,91 @@ type AzureImage struct {
 
 func FromEnv(init bool) (*Options, error) {
 	retOptions := &Options{}
-
-	var err error
-
-	retOptions.ResourceGroup, err = FromEnvOrError(AZURE_RESOURCE_GROUP)
-	if err != nil {
+	if err := loadRequired(retOptions); err != nil {
 		return nil, err
 	}
-
-	retOptions.MachineType, err = FromEnvOrError(AZURE_INSTANCE_SIZE)
-	if err != nil {
+	if err := loadDisk(retOptions); err != nil {
 		return nil, err
 	}
-
-	image, err := FromEnvOrError(AZURE_IMAGE)
-	if err != nil {
+	if err := loadOptional(retOptions); err != nil {
 		return nil, err
 	}
-	imageSplit := strings.Split(image, ":")
-	if len(imageSplit) < 4 {
-		return nil, errors.Errorf("Malformed image name")
-	}
-
-	retOptions.DiskImage.Offer = imageSplit[1]
-	retOptions.DiskImage.Publisher = imageSplit[0]
-	retOptions.DiskImage.SKU = imageSplit[2]
-	retOptions.DiskImage.Version = imageSplit[3]
-
-	diskSizeGB, err := FromEnvOrError(AZURE_DISK_SIZE)
-	if err != nil {
-		return nil, err
-	}
-
-	retOptions.DiskSizeGB, err = strconv.Atoi(diskSizeGB)
-	if err != nil {
-		return nil, err
-	}
-
-	retOptions.DiskType, err = FromEnvOrError(AZURE_DISK_TYPE)
-	if err != nil {
-		return nil, err
-	}
-
-	// Optional
-	retOptions.CustomData = os.Getenv(AZURE_CUSTOM_DATA)
-
-	retOptions.Zone, err = FromEnvOrError(AZURE_REGION)
-	if err != nil {
-		return nil, err
-	}
-
-	retOptions.SubscriptionID, err = FromEnvOrError(AZURE_SUBSCRIPTION_ID)
-	if err != nil {
-		return nil, err
-	}
-
-	retOptions.Tags, err = parseTags(os.Getenv(AZURE_TAGS))
-	if err != nil {
-		return nil, err
-	}
-
-	// Return eraly if we're just doing init
 	if init {
 		return retOptions, nil
 	}
+	return loadMachine(retOptions)
+}
 
-	retOptions.MachineID, err = FromEnvOrError("MACHINE_ID")
+func loadRequired(o *Options) error {
+	for _, f := range []struct {
+		key string
+		dst *string
+	}{
+		{AZURE_RESOURCE_GROUP, &o.ResourceGroup},
+		{AZURE_INSTANCE_SIZE, &o.MachineType},
+		{AZURE_REGION, &o.Zone},
+		{AZURE_SUBSCRIPTION_ID, &o.SubscriptionID},
+	} {
+		v, err := FromEnvOrError(f.key)
+		if err != nil {
+			return err
+		}
+		*f.dst = v
+	}
+	return nil
+}
+
+func loadDisk(o *Options) error {
+	image, err := FromEnvOrError(AZURE_IMAGE)
+	if err != nil {
+		return err
+	}
+	parts := strings.Split(image, ":")
+	if len(parts) < 4 {
+		return fmt.Errorf("malformed image name")
+	}
+	o.DiskImage = AzureImage{
+		Publisher: parts[0],
+		Offer:     parts[1],
+		SKU:       parts[2],
+		Version:   parts[3],
+	}
+
+	diskSize, err := FromEnvOrError(AZURE_DISK_SIZE)
+	if err != nil {
+		return err
+	}
+	o.DiskSizeGB, err = strconv.Atoi(diskSize)
+	if err != nil {
+		return err
+	}
+
+	o.DiskType, err = FromEnvOrError(AZURE_DISK_TYPE)
+	return err
+}
+
+func loadOptional(o *Options) error {
+	o.CustomData = os.Getenv(AZURE_CUSTOM_DATA)
+	tags, err := parseTags(os.Getenv(AZURE_TAGS))
+	if err != nil {
+		return err
+	}
+	o.Tags = tags
+	return nil
+}
+
+func loadMachine(o *Options) (*Options, error) {
+	id, err := FromEnvOrError("MACHINE_ID")
 	if err != nil {
 		return nil, err
 	}
-	// prefix with devpod-
-	retOptions.MachineID = "devpod-" + retOptions.MachineID
+	o.MachineID = "devsy-" + id
 
-	retOptions.MachineFolder, err = FromEnvOrError("MACHINE_FOLDER")
+	o.MachineFolder, err = FromEnvOrError("MACHINE_FOLDER")
 	if err != nil {
 		return nil, err
 	}
-
-	return retOptions, nil
+	return o, nil
 }
 
 func FromEnvOrError(name string) (string, error) {
@@ -144,13 +150,12 @@ func parseTags(tagsEnv string) (map[string]*string, error) {
 		return tags, nil
 	}
 
-	tagsRaw := strings.Split(tagsEnv, ",")
-	for _, tag := range tagsRaw {
-		splitTag := strings.SplitN(tag, "=", 2)
-		if len(splitTag) != 2 {
-			return tags, fmt.Errorf("Malformed tag, expected format tagName=tagValue: %s", tag)
+	for tag := range strings.SplitSeq(tagsEnv, ",") {
+		key, value, ok := strings.Cut(tag, "=")
+		if !ok {
+			return tags, fmt.Errorf("malformed tag, expected format tagName=tagValue: %s", tag)
 		}
-		tags[splitTag[0]] = to.Ptr[string](splitTag[1])
+		tags[key] = to.Ptr(value)
 	}
 
 	return tags, nil
