@@ -10,17 +10,15 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork"
 	"github.com/devsy-org/devsy-provider-azure/pkg/options"
 	"github.com/devsy-org/devsy/pkg/client"
-	"github.com/devsy-org/log"
 )
 
 type AzureProvider struct {
 	Config           *options.Options
 	Cred             *azidentity.DefaultAzureCredential
-	Log              log.Logger
 	WorkingDirectory string
 }
 
-func NewProvider(logs log.Logger) (*AzureProvider, error) {
+func NewProvider() (*AzureProvider, error) {
 	config, err := options.FromEnv(false)
 	if err != nil {
 		return nil, err
@@ -34,7 +32,6 @@ func NewProvider(logs log.Logger) (*AzureProvider, error) {
 	return &AzureProvider{
 		Config: config,
 		Cred:   cred,
-		Log:    logs,
 	}, nil
 }
 
