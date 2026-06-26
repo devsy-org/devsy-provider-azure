@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/devsy-org/devsy-provider-azure/pkg/azure"
-	"github.com/devsy-org/log"
 	"github.com/spf13/cobra"
 )
 
@@ -18,7 +17,7 @@ func NewDeleteCmd() *cobra.Command {
 		Use:   "delete",
 		Short: "Delete an instance",
 		RunE: func(cobraCmd *cobra.Command, args []string) error {
-			azureProvider, err := azure.NewProvider(log.Default)
+			azureProvider, err := azure.NewProvider()
 			if err != nil {
 				return err
 			}
