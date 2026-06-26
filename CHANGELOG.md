@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/devsy-org/devsy-provider-azure/compare/v0.1.0...v0.2.0) (2026-06-26)
+
+
+### Miscellaneous Chores
+
+* release 0.2.0 ([#14](https://github.com/devsy-org/devsy-provider-azure/issues/14)) ([c1fe2c8](https://github.com/devsy-org/devsy-provider-azure/commit/c1fe2c89e20ea216895092fb0f82a27f2a64bebe))
+
 ## [0.1.0](https://github.com/devsy-org/devsy-provider-azure/compare/v0.0.1...v0.1.0) (2026-06-26)
 
 
