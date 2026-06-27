@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/devsy-org/devsy-provider-azure/compare/v0.2.1...v0.2.2) (2026-06-27)
+
+
+### Bug Fixes
+
+* **deps:** update module golang.org/x/crypto to v0.53.0 ([#22](https://github.com/devsy-org/devsy-provider-azure/issues/22)) ([0b8b5da](https://github.com/devsy-org/devsy-provider-azure/commit/0b8b5da7262b883492860e45811ee2b54520a8c1))
+
 ## [0.2.1](https://github.com/devsy-org/devsy-provider-azure/compare/v0.2.0...v0.2.1) (2026-06-27)
 
 
