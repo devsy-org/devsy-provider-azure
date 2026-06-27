@@ -24,7 +24,7 @@ for setup options.
 
 ### Required permissions
 
-The identity running `devsy up`/`create` needs to provision the VM, its
+The identity running `devsy workspace up` needs to provision the VM, its
 networking resources, and a role assignment that lets the VM stop itself
 when the inactivity timer fires. The simplest setup is **Owner** (or
 **Contributor** + **User Access Administrator**) on the target resource
@@ -42,7 +42,7 @@ group. Specifically the provider needs:
 After the initial setup, just use:
 
 ```sh
-devsy up .
+devsy workspace up .
 ```
 
 You'll need to wait for the machine and environment setup.
