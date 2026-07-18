@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.7](https://github.com/devsy-org/devsy-provider-azure/compare/v0.2.6...v0.2.7) (2026-07-18)
+
+
+### Bug Fixes
+
+* **deps:** update azure-sdk-for-go monorepo ([#39](https://github.com/devsy-org/devsy-provider-azure/issues/39)) ([80aa32a](https://github.com/devsy-org/devsy-provider-azure/commit/80aa32ac7d1f521865541af93e0f0d13324845d6))
+
 ## [0.2.6](https://github.com/devsy-org/devsy-provider-azure/compare/v0.2.5...v0.2.6) (2026-07-04)
 
 
