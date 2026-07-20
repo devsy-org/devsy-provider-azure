@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.9](https://github.com/devsy-org/devsy-provider-azure/compare/v0.2.8...v0.2.9) (2026-07-20)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v8 to v8.2.0 ([#47](https://github.com/devsy-org/devsy-provider-azure/issues/47)) ([a4e1919](https://github.com/devsy-org/devsy-provider-azure/commit/a4e1919ce0fa38cd779f06deea168d8e910db188))
+
 ## [0.2.8](https://github.com/devsy-org/devsy-provider-azure/compare/v0.2.7...v0.2.8) (2026-07-19)
 
 
