@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.16](https://github.com/devsy-org/devsy-provider-azure/compare/v0.2.15...v0.2.16) (2026-08-03)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/devsy-org/devsy to v1.13.0 ([#64](https://github.com/devsy-org/devsy-provider-azure/issues/64)) ([cb49a05](https://github.com/devsy-org/devsy-provider-azure/commit/cb49a05f8748119c96214acfafc912a8cebfa93b))
+
 ## [0.2.15](https://github.com/devsy-org/devsy-provider-azure/compare/v0.2.14...v0.2.15) (2026-07-31)
 
 
