@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.20](https://github.com/devsy-org/devsy-provider-azure/compare/v0.2.19...v0.2.20) (2026-08-12)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/azure/azure-sdk-for-go/sdk/azcore to v1.23.0 ([#73](https://github.com/devsy-org/devsy-provider-azure/issues/73)) ([ac3d088](https://github.com/devsy-org/devsy-provider-azure/commit/ac3d08878717e47362c1c76e8337899ffc3778d6))
+
 ## [0.2.19](https://github.com/devsy-org/devsy-provider-azure/compare/v0.2.18...v0.2.19) (2026-08-09)
 
 
