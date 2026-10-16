@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.24](https://github.com/devsy-org/devsy-provider-azure/compare/v0.2.23...v0.2.24) (2026-10-16)
+
+
+### Bug Fixes
+
+* **deps:** update azure-sdk-for-go monorepo to v12 ([#80](https://github.com/devsy-org/devsy-provider-azure/issues/80)) ([ec6d844](https://github.com/devsy-org/devsy-provider-azure/commit/ec6d844c6606f5faa95d4de66974cfd141a6b6ed))
+
 ## [0.2.23](https://github.com/devsy-org/devsy-provider-azure/compare/v0.2.22...v0.2.23) (2026-10-16)
 
 
