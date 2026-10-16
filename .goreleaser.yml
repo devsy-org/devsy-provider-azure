@@ -1,8 +1,6 @@
 version: 2
 project_name: devsy-provider-azure
 release:
-  # A rerun of the Release workflow re-uploads the same artifact names;
-  # replace assets a previous attempt already published instead of failing.
   replace_existing_artifacts: true
 builds:
   - id: build
