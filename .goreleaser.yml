@@ -1,5 +1,7 @@
 version: 2
 project_name: devsy-provider-azure
+release:
+  replace_existing_artifacts: true
 builds:
   - id: build
     goos: [linux, darwin, windows]
