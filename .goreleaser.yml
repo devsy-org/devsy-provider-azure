@@ -1,5 +1,5 @@
 version: 2
-project_name: devsy-provider-aws
+project_name: devsy-provider-azure
 builds:
   - id: build
     goos: [linux, darwin, windows]
