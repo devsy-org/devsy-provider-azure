@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.23](https://github.com/devsy-org/devsy-provider-azure/compare/v0.2.22...v0.2.23) (2026-10-16)
+
+
+### Bug Fixes
+
+* correct Azure provider release artifact names ([#82](https://github.com/devsy-org/devsy-provider-azure/issues/82)) ([4e5a0fb](https://github.com/devsy-org/devsy-provider-azure/commit/4e5a0fba41bfacf2b4a0ce91ed8c2141f7b5162b))
+
 ## [0.2.22](https://github.com/devsy-org/devsy-provider-azure/compare/v0.2.21...v0.2.22) (2026-08-17)
 
 
