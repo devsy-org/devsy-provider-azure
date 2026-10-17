@@ -71,4 +71,4 @@ devsy provider set-options -o AZURE_IMAGE=Vendor:Offer:SKU:Version
 
 ## Local Development
 
-To build and test the provider locally, use [task](https://taskfile.dev/) `task build:provider:dev`. The provider file is created in `./dist/provider.yaml`.
+To build and test the provider locally, install [mise](https://mise.jdx.dev/) and run `mise install && mise run build:provider:dev`. The provider file is created in `./dist/provider.yaml`.
