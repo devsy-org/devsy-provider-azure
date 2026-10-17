@@ -3,17 +3,17 @@
 lockfile_version = 3
 
 [[tools.go]]
-version = "1.26.3"
+version = "1.26.8"
 backend = "core:go"
-specifiers = ["1.26.3"]
+specifiers = ["1.26.8"]
 
 [tools.go."platforms.linux-x64"]
-checksum = "sha256:2b2cfc7148493da5e73981bffbf3353af381d5f93e789c82c79aff64962eb556"
-url = "https://dl.google.com/go/go1.26.3.linux-amd64.tar.gz"
+checksum = "sha256:d0f743b33e8d8945e6b1f432edd15785c70507121d6e2a723b21285eddf8b57b"
+url = "https://dl.google.com/go/go1.26.8.linux-amd64.tar.gz"
 
 [tools.go."platforms.macos-arm64"]
-checksum = "sha256:875cf54a15311eee2c99b9dd67c68c4a49351d489ab622bf2cfd28c8f2078d3c"
-url = "https://dl.google.com/go/go1.26.3.darwin-arm64.tar.gz"
+checksum = "sha256:a012b25b571bd0138a03dcd25375ceba866fe5ca822f426d2c66a4de56fd3f4b"
+url = "https://dl.google.com/go/go1.26.8.darwin-arm64.tar.gz"
 
 [[tools.golangci-lint]]
 version = "2.15.0"
