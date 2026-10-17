@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.3](https://github.com/devsy-org/devsy-provider-azure/compare/v1.0.2...v1.0.3) (2026-10-17)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v10 to v12 ([#105](https://github.com/devsy-org/devsy-provider-azure/issues/105)) ([440d216](https://github.com/devsy-org/devsy-provider-azure/commit/440d216df707a17a1ec95921c216b6f879de4987))
+
 ## [1.0.2](https://github.com/devsy-org/devsy-provider-azure/compare/v1.0.1...v1.0.2) (2026-10-17)
 
 
