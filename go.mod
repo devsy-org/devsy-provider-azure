@@ -1,6 +1,6 @@
 module github.com/devsy-org/devsy-provider-azure
 
-go 1.26.8
+go 1.26.10
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.23.3
