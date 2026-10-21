@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.5](https://github.com/devsy-org/devsy-provider-azure/compare/v1.0.4...v1.0.5) (2026-10-21)
+
+
+### Bug Fixes
+
+* reclaim runner disk and verify release publication ([#118](https://github.com/devsy-org/devsy-provider-azure/issues/118)) ([180fa03](https://github.com/devsy-org/devsy-provider-azure/commit/180fa03ee6ad7e399ce24dc99340eb1685531fa8))
+
 ## [1.0.4](https://github.com/devsy-org/devsy-provider-azure/compare/v1.0.3...v1.0.4) (2026-10-21)
 
 
