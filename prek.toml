@@ -63,7 +63,6 @@ rev = "v1.7.12"
 hooks = [
   {
     id = "actionlint",
-    args = ['-ignore', 'unexpected key "background" for step', '-ignore', 'step must run script with "run" section or run action with "uses" section'],
     files = '^\.github/workflows/'
   }
 ]
