@@ -69,6 +69,12 @@ Options can be set in `env` or via the CLI:
 devsy provider set-options -o AZURE_IMAGE=Vendor:Offer:SKU:Version
 ```
 
+## Logging
+
+Provider diagnostics are written to stderr as JSON by default. `DEVSY_LOG_LEVEL` selects `error`, `warn`, `info`, `debug`, or `trace`. The standalone default is `info`. Devsy passes its effective log level to the provider.
+
+`DEVSY_LOG_FORMAT` accepts `json`, `text`, `plain`, `logfmt`, or `auto`. The `auto` format selects JSON for provider output. Command output and provider protocol data remain on their established streams.
+
 ## Local Development
 
 To build and test the provider locally, install [mise](https://mise.jdx.dev/) and run `mise install && mise run build:provider:dev`. The provider file is created in `./dist/provider.yaml`.
